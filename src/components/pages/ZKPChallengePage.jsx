@@ -1,102 +1,86 @@
 // src/components/pages/ZKPChallengePage.jsx
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { submitZKPTransaction } from '../../blockchain'; // reuse same blockchain helper
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const ZKPChallengePage = () => {
+export default function ZKPChallengePage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const walletAddress = location.state?.walletAddress || "";
+  const [answers, setAnswers] = useState(["", "", "", ""]);
+  const [message, setMessage] = useState("");
 
-  const questions = [
-    "1) What is the sum of the 1st and 3rd numbers?",
-    "2) What is the sum of the previous answer and the 2nd number?",
-    "3) What is the product of the 1st and 4th numbers?",
-    "4) What is the difference between the 3rd and 1st numbers?"
-  ];
+  const userId = "user123"; // Replace with actual logged-in user ID
 
-  const [answers, setAnswers] = useState(['', '', '', '']);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleAnswerChange = (index, value) => {
+  const handleChange = (idx, value) => {
     const newAnswers = [...answers];
-    newAnswers[index] = value;
+    newAnswers[idx] = value;
     setAnswers(newAnswers);
   };
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
+  const handleVerify = async () => {
     try {
-      // Simulate backend ZKP verification
-      const response = await fetch("http://localhost:5000/api/verifyZkp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress, answers }),
+      const response = await axios.post("http://localhost:5000/api/zkp-verify", {
+        userId,
+        answers,
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        alert("✅ ZKP Verification Successful!\nTransaction Authorized.");
-        await submitZKPTransaction(walletAddress); // call your blockchain transaction
-        navigate("/dashboard");
+      if (response.data.success) {
+        setMessage("✅ ZKP verified successfully!");
+        // Redirect to dashboard after verification
+        setTimeout(() => navigate("/dashboard"), 1000);
       } else {
-        alert("❌ Verification Failed! Your account is now blocked.");
-        await fetch("http://localhost:5000/api/blockUser", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ walletAddress }),
-        });
-        navigate("/blocked");
+        setMessage("❌ " + response.data.message);
+        // Redirect to blocked page if account frozen
+        if (response.data.message.includes("frozen")) {
+          setTimeout(() => navigate("/blocked"), 1500);
+        }
       }
-    } catch (err) {
-      console.error("ZKP Verification Error:", err);
-      setError("An error occurred during verification.");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setMessage("⚠️ Server error. Try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-8">
-      <div className="max-w-lg w-full bg-gray-800 rounded-2xl p-6 shadow-lg">
-        <h1 className="text-2xl font-bold mb-4 text-center">🧠 Zero Knowledge Challenge</h1>
-        <p className="text-center mb-6 text-gray-300">
-          Answer the following arithmetic questions to prove your identity.
-        </p>
+    <div className="zkp-page">
+      <h2>Zero Knowledge Challenge</h2>
+      <ol>
+        <li>
+          Sum of 1st and 3rd numbers:
+          <input
+            type="number"
+            value={answers[0]}
+            onChange={(e) => handleChange(0, e.target.value)}
+          />
+        </li>
+        <li>
+          Sum of previous answer + 2nd number:
+          <input
+            type="number"
+            value={answers[1]}
+            onChange={(e) => handleChange(1, e.target.value)}
+          />
+        </li>
+        <li>
+          Product of 1st and 4th numbers:
+          <input
+            type="number"
+            value={answers[2]}
+            onChange={(e) => handleChange(2, e.target.value)}
+          />
+        </li>
+        <li>
+          Difference between 3rd and 1st numbers:
+          <input
+            type="number"
+            value={answers[3]}
+            onChange={(e) => handleChange(3, e.target.value)}
+          />
+        </li>
+      </ol>
 
-        <form onSubmit={handleVerify}>
-          {questions.map((q, index) => (
-            <div key={index} className="mb-5">
-              <label className="block mb-2 font-medium">{q}</label>
-              <input
-                type="number"
-                value={answers[index]}
-                onChange={(e) => handleAnswerChange(index, e.target.value)}
-                placeholder={`Answer ${index + 1}`}
-                required
-                className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          ))}
+      <button onClick={handleVerify}>Verify Proof & Send</button>
 
-          {error && <p className="text-red-500 text-center mb-3">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
-          >
-            {loading ? "Verifying..." : "Verify Proof"}
-          </button>
-        </form>
-      </div>
+      {message && <p>{message}</p>}
     </div>
   );
-};
-
-export default ZKPChallengePage;
+}

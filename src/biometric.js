@@ -1,25 +1,14 @@
-// src/biometric.js
-import React, { useState } from "react";
+import sha256 from "crypto-js/sha256";
 
-// ✅ Simple demo biometric scan component
-export const BiometricScanComponent = ({ onSuccess }) => {
-  const [status, setStatus] = useState("Place your finger...");
+/** Turn click coordinates into a hash */
+export function hashPicturePattern(points) {
+  return sha256(JSON.stringify(points)).toString();
+}
 
-  const handleScan = () => {
-    setStatus("Scanning...");
-    setTimeout(() => {
-      setStatus("✅ Biometric Verified!");
-      onSuccess(); // trigger navigation when scan succeeds
-    }, 2000);
-  };
-
-  return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h2>🔐 Biometric Verification</h2>
-      <p>{status}</p>
-      <button onClick={handleScan} style={{ marginTop: "20px", padding: "10px 20px" }}>
-        Start Scan
-      </button>
-    </div>
-  );
-};
+/** Component logic to capture clicks on an image */
+export function handleImageClick(e, setPoints) {
+  const rect = e.target.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width).toFixed(2);
+  const y = ((e.clientY - rect.top) / rect.height).toFixed(2);
+  setPoints((prev) => [...prev, { x, y }]);
+}

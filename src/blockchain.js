@@ -1,37 +1,71 @@
+// src/blockchain.js
 import { ethers } from "ethers";
 
-// Replace with your deployed contract address from Remix
-const CONTRACT_ADDRESS = "0xf8e81D47203A594245E36C48e151709F0C19fBe8";
+// Connect to local Ganache blockchain
+const provider = new ethers.JsonRpcProvider("http://127.0.0.1:9545");
+let signer;
+let txHistory = [];
 
-// Minimal ABI for your SecureWallet contract
-const CONTRACT_ABI = [
-  "function deposit() external payable",
-  "function getBalance() public view returns (uint256)",
-  "event Deposit(address indexed sender, uint amount)"
-];
-
-// Connect to the VM provider (Remix injects the VM provider)
-const provider = new ethers.providers.Web3Provider(window.ethereum || "http://localhost:8545"); 
-const signer = provider.getSigner();
-const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-export const fetchBalance = async () => {
-  try {
-    const balance = await contract.getBalance();
-    return ethers.utils.formatEther(balance); // Convert wei → ETH
-  } catch (err) {
-    console.error("Error fetching balance:", err);
-    return 0;
-  }
+// ✅ Get account data (address + balance)
+export const getAccountData = async () => {
+  if (!signer) signer = await provider.getSigner(0);
+  const account = signer.address;
+  const balanceWei = await provider.getBalance(account);
+  const balance = ethers.formatEther(balanceWei);
+  return { account, balance };
 };
 
-export const depositEther = async (amount) => {
-  try {
-    const tx = await contract.deposit({ value: ethers.utils.parseEther(amount) });
-    await tx.wait();
-    return true;
-  } catch (err) {
-    console.error("Deposit failed:", err);
-    return false;
-  }
+// ✅ Send ETH transaction + update in-memory history
+export const sendFunds = async (to, amount) => {
+  if (!signer) signer = await provider.getSigner(0);
+  const tx = await signer.sendTransaction({
+    to,
+    value: ethers.parseEther(amount),
+  });
+  await tx.wait();
+
+  // Save transaction in memory
+  txHistory.push({
+    to,
+    amount,
+    timestamp: new Date().toLocaleString(),
+  });
+};
+
+// ✅ Fetch transaction history
+export const getHistory = async () => {
+  return txHistory;
+};
+
+// ✅ Mock ZKP generation
+export const generateZKP = async (sender, recipient, amount) => {
+  console.log("🔐 Generating ZKP for:", sender, recipient, amount);
+  return { proof: "mock-proof", publicSignals: [sender, recipient, amount] };
+};
+
+// ✅ Mock ZKP verification
+export const verifyZKP = async (proof) => {
+  console.log("🧾 Verifying proof:", proof);
+  return true; // set to false to simulate failed verification
+};
+
+// ✅ Submit transaction after ZKP verification
+export const submitZKPTransaction = async (walletAddress, recipient, amount) => {
+  if (!signer) signer = await provider.getSigner(0);
+
+  const tx = await signer.sendTransaction({
+    to: recipient,
+    value: ethers.parseEther(amount),
+  });
+  await tx.wait();
+
+  // Update transaction history in memory
+  txHistory.push({
+    to: recipient,
+    amount,
+    timestamp: new Date().toLocaleString(),
+  });
+
+  console.log("✅ Transaction completed via ZKP for:", walletAddress);
+  return tx;
 };

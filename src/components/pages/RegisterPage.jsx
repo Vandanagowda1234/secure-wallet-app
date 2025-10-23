@@ -1,7 +1,7 @@
 // src/components/pages/RegisterPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerUser } from "../../firebase";
+import { registerUser, savePicturePassword } from "../../firebase";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
