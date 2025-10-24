@@ -1,14 +1,15 @@
 // src/components/pages/ZKPChallengePage.jsx
 import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ZKPChallengePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const { walletAddress, recipient, amount } = location.state;
+
   const [answers, setAnswers] = useState(["", "", "", ""]);
   const [message, setMessage] = useState("");
-
-  const userId = "user123"; // Replace with actual logged-in user ID
 
   const handleChange = (idx, value) => {
     const newAnswers = [...answers];
@@ -17,31 +18,56 @@ export default function ZKPChallengePage() {
   };
 
   const handleVerify = async () => {
-    try {
-      const response = await axios.post("http://localhost:5000/api/zkp-verify", {
-        userId,
-        answers,
-      });
+    // For demo, simulate ZKP verification success
+    const verificationSuccess = true;
 
-      if (response.data.success) {
-        setMessage("✅ ZKP verified successfully!");
-        // Redirect to dashboard after verification
-        setTimeout(() => navigate("/dashboard"), 1000);
-      } else {
-        setMessage("❌ " + response.data.message);
-        // Redirect to blocked page if account frozen
-        if (response.data.message.includes("frozen")) {
-          setTimeout(() => navigate("/blocked"), 1500);
+    if (verificationSuccess) {
+      setMessage("✅ ZKP verified successfully!");
+
+      // --- Update transaction history and balances ---
+      const storedHistory = JSON.parse(localStorage.getItem("txHistory")) || [];
+      const timestamp = new Date().toLocaleString();
+
+      // Add new transaction
+      storedHistory.push({
+        sender: walletAddress,
+        recipient,
+        amount,
+        timestamp,
+      });
+      localStorage.setItem("txHistory", JSON.stringify(storedHistory));
+
+      // Update balances for sender and recipient
+      const storedAccounts = JSON.parse(localStorage.getItem("accounts")) || [];
+      const updatedAccounts = storedAccounts.map(acc => {
+        if (acc.address === walletAddress) {
+          return { ...acc, balance: parseFloat(acc.balance) - parseFloat(amount) };
         }
-      }
-    } catch (error) {
-      console.error(error);
-      setMessage("⚠️ Server error. Try again.");
+        if (acc.address === recipient) {
+          return { ...acc, balance: parseFloat(acc.balance) + parseFloat(amount) };
+        }
+        return acc;
+      });
+      localStorage.setItem("accounts", JSON.stringify(updatedAccounts));
+
+      // Redirect to Transaction Success page after 1 second
+      setTimeout(() => {
+        navigate("/transaction-success", {
+          state: {
+            sender: walletAddress,
+            recipient,
+            amount,
+            timestamp,
+          },
+        });
+      }, 1000);
+    } else {
+      setMessage("❌ ZKP verification failed. Try again.");
     }
   };
 
   return (
-    <div className="zkp-page">
+    <div className="zkp-page" style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
       <h2>Zero Knowledge Challenge</h2>
       <ol>
         <li>

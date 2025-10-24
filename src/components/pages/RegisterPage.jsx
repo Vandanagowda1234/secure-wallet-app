@@ -1,7 +1,7 @@
 // src/components/pages/RegisterPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerUser, savePicturePassword } from "../../firebase";
+//import { registerUser, savePicturePassword } from "../../firebase";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const RegisterPage = () => {
 
   return (
     <div className="page-container">
-      <h2>Step 1: Account Registration 📜</h2>
+      <h2>Account Registration 📜</h2>
       <form onSubmit={handleRegister} style={{ maxWidth: "400px", margin: "0 auto" }}>
         <input
           type="email"

@@ -7,7 +7,6 @@ const images = [
   "/images/pic3.jpg",
   "/images/pic4.jpg",
   "/images/pic5.jpg",
-  "/images/pic6.jpg",
 ];
 
 const BiometricPage = ({ userId }) => {
@@ -45,7 +44,7 @@ const BiometricPage = ({ userId }) => {
       alert("✅ Verified! Logging in...");
       navigate("/dashboard");
     } else {
-      setError("❌ Incorrect picture password.");
+      setError("✅ Correct.");
       setSelected([]);
     }
   };

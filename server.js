@@ -1,84 +1,72 @@
-import express from 'express';
-import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// -------------------------
+// Imports & Setup
+// -------------------------
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
+// -------------------------
+// Firebase (Client SDK)
+// -------------------------
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+
+// Your Firebase web config (get this from Firebase Console → Project Settings → General)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
+// -------------------------
+// Express Setup
+// -------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-// Enable CORS for all origins
 app.use(cors());
-
-// Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 // -------------------------
-// Picture password routes
+// Picture Password Routes
 // -------------------------
-app.post("/api/register-picture-password", (req, res) => {
-  const { userId, selectedPics } = req.body;
-  console.log("Picture password saved for user:", userId, selectedPics);
-  res.json({ success: true });
-});
+app.post("/api/register-picture-password", async (req, res) => {
+  try {
+    const { userId, selectedPics } = req.body;
+    if (!userId || !selectedPics) {
+      return res.status(400).json({ success: false, message: "Missing data" });
+    }
 
-app.get("/api/get-picture-password/:userId", (req, res) => {
-  const { userId } = req.params;
-  const selectedPics = ["/images/pic1.jpg", "/images/pic3.jpg", "/images/pic5.jpg"];
-  res.json({ success: true, selectedPics });
-});
+    const hashedPattern = Buffer.from(selectedPics.join("-")).toString("base64");
 
-// -------------------------
-// ZKP verification route
-// -------------------------
+    await setDoc(
+      doc(db, "users", userId),
+      {
+        picturePassword: hashedPattern,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
 
-// In-memory storage of user secret numbers (replace with DB in production)
-// In-memory storage of user secret numbers (replace with DB in production)
-const userSecrets = {
-  "user123": [1, 2, 3, 4], // example secret numbers for testing
-};
-
-const frozenAccounts = new Set();
-
-app.post("/api/zkp-verify", (req, res) => {
-  const { userId, answers } = req.body;
-
-  if (frozenAccounts.has(userId)) {
-    return res.json({ success: false, message: "Account frozen" });
+    res.json({ success: true, message: "Picture password saved!" });
+  } catch (error) {
+    console.error("❌ Error saving picture password:", error);
+    res.status(500).json({ success: false, message: "Error saving password" });
   }
-
-  const secrets = userSecrets[userId];
-  if (!secrets) {
-    return res.status(400).json({ success: false, message: "User not found" });
-  }
-
-  const [n1, n2, n3, n4] = secrets;
-
-  const expected = [
-    n1 + n3,          // Q1
-    (n1 + n3) + n2,   // Q2
-    n1 * n4,          // Q3
-    n3 - n1           // Q4
-  ];
-
-  // Check answers
-  const correct = answers.every((ans, idx) => Number(ans) === expected[idx]);
-
-  if (!correct) {
-    frozenAccounts.add(userId);
-    return res.json({ success: false, message: "Incorrect answers. Account frozen." });
-  }
-
-  return res.json({ success: true, message: "ZKP verified successfully!" });
 });
 
-
 // -------------------------
-// Start server
+// Start Server
 // -------------------------
-app.listen(PORT, () => {
-  console.log(`✅ Backend running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

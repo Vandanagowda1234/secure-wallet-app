@@ -1,9 +1,9 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithPhoneNumber } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
 
-// Firebase config
+// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAArPdKW7uuaO7wFtRocxB_mxG495OcXCg",
   authDomain: "cyber-shield--ai.firebaseapp.com",
@@ -19,68 +19,57 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// -------------------- Auth Functions --------------------
-
-// Register user with email & password
+/**
+ * Register a new user in Firebase Auth + Firestore
+ */
 export async function registerUser(email, password, username, phone, zkpPin) {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const userId = userCredential.user.uid;
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
 
-    // Save extra info in Firestore
-    await setDoc(doc(db, "users", userId), { username, phone, zkpPin });
-    return { success: true, userId };
+  // Store user details in Firestore
+  await setDoc(doc(db, "users", user.uid), {
+    email,
+    username,
+    phone,
+    zkpPin,
+    frozen: false,
+    createdAt: new Date()
+  });
+
+  return user;
+}
+
+/**
+ * Freeze a user's account (after wrong ZKP attempt)
+ */
+export async function freezeUserAccount(userId) {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      frozen: true,
+      frozenAt: new Date(),
+    });
+    console.log("❌ Account frozen due to wrong ZKP!");
   } catch (err) {
-    console.error("Registration error:", err);
-    return { success: false, error: err.message };
+    console.error("Failed to freeze account:", err);
   }
 }
 
-// Send OTP (demo mode, replace with actual phone verification if needed)
-export async function sendOtp(phone) {
+/**
+ * Check if account is frozen
+ */
+export async function isAccountFrozen(userId) {
   try {
-    // For dev/testing, we just return a static OTP
-    const otp = "1234";
-    console.log(`🧪 Dev Mode OTP sent to ${phone}: ${otp}`);
-    return { success: true, otp };
-  } catch (err) {
-    console.error("OTP send error:", err);
-    return { success: false, error: err.message };
-  }
-}
-
-// -------------------- Picture Password --------------------
-
-// Dummy hashing function
-export function hashPicturePattern(selectedPics) {
-  return selectedPics.join("-");
-}
-
-// Fetch stored picture password hash
-export async function getPicturePasswordHash(userId) {
-  try {
-    const docSnap = await getDoc(doc(db, "users", userId));
-    if (docSnap.exists()) {
-      return docSnap.data().picturePassword || "";
+    const userSnap = await getDoc(doc(db, "users", userId));
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      return data.frozen || false;
     }
-    return "";
+    return false;
   } catch (err) {
-    console.error("Error fetching picture password:", err);
-    return "";
+    console.error("Failed to check frozen status:", err);
+    return false;
   }
 }
 
-// Save picture password
-export async function savePicturePassword(userId, selectedPics) {
-  try {
-    await setDoc(
-      doc(db, "users", userId),
-      { picturePassword: hashPicturePattern(selectedPics) },
-      { merge: true }
-    );
-    return { success: true };
-  } catch (err) {
-    console.error("Error saving picture password:", err);
-    return { success: false, error: err.message };
-  }
-}
+export { auth, db, signInWithEmailAndPassword };
