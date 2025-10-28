@@ -1,4 +1,7 @@
+// src/App.jsx
+import React from "react";
 import { Routes, Route } from "react-router-dom";
+
 import RegisterPage from "./components/pages/RegisterPage.jsx";
 import LoginPage from "./components/pages/LoginPage.jsx";
 import PicturePasswordSetup from "./components/pages/PicturePasswordSetup.jsx";
@@ -19,8 +22,6 @@ function App() {
       <Route path="/zkp-challenge" element={<ZKPChallengePage />} />
       <Route path="/blocked" element={<BlockedPage />} />
       <Route path="/transaction-success" element={<TransactionSuccessPage />} />
-
-      {/* Catch-all route for unmatched paths */}
       <Route path="*" element={<div>404: Page Not Found</div>} />
     </Routes>
   );

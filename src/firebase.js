@@ -1,75 +1,120 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
 
-// Your Firebase config
+// ✅ Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAArPdKW7uuaO7wFtRocxB_mxG495OcXCg",
-  authDomain: "cyber-shield--ai.firebaseapp.com",
-  projectId: "cyber-shield--ai",
-  storageBucket: "cyber-shield--ai.firebasestorage.app",
-  messagingSenderId: "935467340315",
-  appId: "1:935467340315:web:7ac3e4cf3e168f7dc31ebe",
-  measurementId: "G-7QN8HF15QZ"
+  apiKey: "AIzaSyAxxxxxx", // replace with your real API key
+  authDomain: "walletapp-a97d5.firebaseapp.com",
+  projectId: "walletapp-a97d5",
+  storageBucket: "walletapp-a97d5.appspot.com",
+  messagingSenderId: "581230224931",
+  appId: "1:581230224931:web:abcd1234efgh5678",
 };
 
-// Initialize Firebase
+// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+export const db = getFirestore(app);
 
-/**
- * Register a new user in Firebase Auth + Firestore
- */
-export async function registerUser(email, password, username, phone, zkpPin) {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
-
-  // Store user details in Firestore
-  await setDoc(doc(db, "users", user.uid), {
-    email,
-    username,
-    phone,
-    zkpPin,
-    frozen: false,
-    createdAt: new Date()
-  });
-
-  return user;
-}
-
-/**
- * Freeze a user's account (after wrong ZKP attempt)
- */
-export async function freezeUserAccount(userId) {
+//
+// ─── REGISTER USER ─────────────────────────────────────────────
+//
+export const registerUser = async (email, password, username, phone, zkpPin) => {
   try {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      frozen: true,
-      frozenAt: new Date(),
-    });
-    console.log("❌ Account frozen due to wrong ZKP!");
-  } catch (err) {
-    console.error("Failed to freeze account:", err);
+    const userRef = doc(db, "users", phone);
+    const userData = {
+      email,
+      password, // ⚠️ for demo purposes only
+      username,
+      phone,
+      zkpPin,
+      createdAt: new Date().toISOString(),
+      isFrozen: false,
+      picturePassword: [],
+    };
+
+    await setDoc(userRef, userData);
+    console.log("✅ User registered:", userData);
+    return { uid: phone };
+  } catch (error) {
+    console.error("🔥 Registration error:", error);
+    throw error;
   }
-}
+};
 
-/**
- * Check if account is frozen
- */
-export async function isAccountFrozen(userId) {
+//
+// ─── CHECK IF PHONE EXISTS ─────────────────────────────────────
+//
+export const checkIfPhoneExists = async (phone) => {
   try {
-    const userSnap = await getDoc(doc(db, "users", userId));
+    const userRef = doc(db, "users", phone);
+    const userSnap = await getDoc(userRef);
+
     if (userSnap.exists()) {
       const data = userSnap.data();
-      return data.frozen || false;
+      console.log("📱 User found:", data);
+      return { id: phone, ...data };
+    } else {
+      console.warn("❌ No user found for phone:", phone);
+      return null;
     }
-    return false;
-  } catch (err) {
-    console.error("Failed to check frozen status:", err);
-    return false;
+  } catch (error) {
+    console.error("❌ Firestore phone check failed:", error);
+    throw new Error("phone-check-failed");
   }
-}
+};
 
-export { auth, db, signInWithEmailAndPassword };
+//
+// ─── SAVE PICTURE PASSWORD ─────────────────────────────────────
+//
+export const savePicturePassword = async (userId, imageUrls) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, { picturePassword: imageUrls });
+    console.log("🖼️ Picture password saved:", imageUrls);
+    return true;
+  } catch (error) {
+    console.error("❌ Error saving picture password:", error);
+    throw error;
+  }
+};
+
+//
+// ─── GET USER IMAGE DATA ───────────────────────────────────────
+//
+export const getUserImageData = async (userId) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    // ✅ Load static images (from public/images/)
+    const allImages = [
+      `${window.location.origin}/images/pic1.jpg`,
+      `${window.location.origin}/images/pic2.jpg`,
+      `${window.location.origin}/images/pic3.jpg`,
+      `${window.location.origin}/images/pic4.jpg`,
+      `${window.location.origin}/images/pic5.jpg`,
+      `${window.location.origin}/images/pic6.jpg`,
+    ];
+
+    if (!userSnap.exists()) {
+      console.warn("⚠️ No user found for ID:", userId);
+      return { allImages, savedPassword: [] };
+    }
+
+    const data = userSnap.data();
+    const savedPassword = data.picturePassword || [];
+    console.log("🎯 Retrieved user image data:", { allImages, savedPassword });
+
+    return { allImages, savedPassword };
+  } catch (error) {
+    console.error("❌ Error fetching user image data:", error);
+    return { allImages: [], savedPassword: [] };
+  }
+};
