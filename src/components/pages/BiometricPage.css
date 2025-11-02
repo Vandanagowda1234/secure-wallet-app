@@ -1,0 +1,101 @@
+.biometric-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.subtitle {
+  color: #555;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 90%;
+  max-width: 700px;
+  justify-items: center;
+  margin-bottom: 20px;
+}
+
+.image-box {
+  border: 3px solid #ccc;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.image-box:hover {
+  transform: scale(1.05);
+  border-color: #007bff;
+}
+
+.image-box.selected {
+  border-color: #00cc66;
+  transform: scale(1.08);
+}
+
+.image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+}
+
+.selection-count {
+  margin-bottom: 15px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.selection-count.red {
+  color: #d9534f;
+}
+
+.selection-count.green {
+  color: #28a745;
+}
+
+.verify-button {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 25px;
+  border-radius: 8px;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.verify-button.disabled {
+  background-color: #999;
+  cursor: not-allowed;
+}
+
+.verify-button.active {
+  background-color: #007bff;
+}
+
+.verify-button.active:hover {
+  background-color: #0056b3;
+}
+
+.loading-text {
+  text-align: center;
+  margin-top: 50px;
+  font-size: 18px;
+  color: #666;
+}

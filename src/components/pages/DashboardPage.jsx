@@ -38,7 +38,7 @@ const DashboardPage = () => {
   useEffect(() => {
     const loadData = async () => {
       const storedAccounts = JSON.parse(localStorage.getItem("accounts")) || ganacheAccounts;
-      const connectedAccount = storedAccounts.find(acc => acc.address === account) || storedAccounts[0];
+      const connectedAccount = storedAccounts.find(acc => acc.address === account) || storedAccounts[1];
 
       setAccount(connectedAccount.address);
       setBalance(parseFloat(connectedAccount.balance));

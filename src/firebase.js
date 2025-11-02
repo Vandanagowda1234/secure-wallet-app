@@ -6,6 +6,10 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 
 // ✅ Firebase configuration
@@ -28,15 +32,23 @@ export const db = getFirestore(app);
 export const registerUser = async (email, password, username, phone, zkpPin) => {
   try {
     const userRef = doc(db, "users", phone);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      throw new Error("User already exists with this phone number.");
+    }
+
     const userData = {
       email,
-      password, // ⚠️ for demo purposes only
+      password, // ⚠️ only for demo
       username,
       phone,
       zkpPin,
       createdAt: new Date().toISOString(),
       isFrozen: false,
       picturePassword: [],
+      picturePasswordSetOn: null,
+      walletAddress: "", // ✅ added for wallet linkage
     };
 
     await setDoc(userRef, userData);
@@ -53,13 +65,13 @@ export const registerUser = async (email, password, username, phone, zkpPin) => 
 //
 export const checkIfPhoneExists = async (phone) => {
   try {
-    const userRef = doc(db, "users", phone);
-    const userSnap = await getDoc(userRef);
+    const q = query(collection(db, "users"), where("phone", "==", phone));
+    const querySnapshot = await getDocs(q);
 
-    if (userSnap.exists()) {
-      const data = userSnap.data();
-      console.log("📱 User found:", data);
-      return { id: phone, ...data };
+    if (!querySnapshot.empty) {
+      const docData = querySnapshot.docs[0].data();
+      console.log("📱 User found:", docData);
+      return { id: querySnapshot.docs[0].id, ...docData };
     } else {
       console.warn("❌ No user found for phone:", phone);
       return null;
@@ -76,7 +88,10 @@ export const checkIfPhoneExists = async (phone) => {
 export const savePicturePassword = async (userId, imageUrls) => {
   try {
     const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { picturePassword: imageUrls });
+    await updateDoc(userRef, {
+      picturePassword: imageUrls,
+      picturePasswordSetOn: new Date().toISOString(),
+    });
     console.log("🖼️ Picture password saved:", imageUrls);
     return true;
   } catch (error) {
@@ -93,7 +108,7 @@ export const getUserImageData = async (userId) => {
     const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
 
-    // ✅ Load static images (from public/images/)
+    // ✅ Load static images from /public/images/
     const allImages = [
       `${window.location.origin}/images/pic1.jpg`,
       `${window.location.origin}/images/pic2.jpg`,

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerUser, checkIfPhoneExists } from "../../firebase"; // <-- make sure the path is correct
+import { registerUser, checkIfPhoneExists } from "../../firebase";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -18,7 +18,6 @@ const RegisterPage = () => {
     setError("");
     setLoading(true);
 
-    // ✅ Validation
     if (!email || !password || !username || !phone || !zkpPin) {
       setError("All fields are required.");
       setLoading(false);
@@ -32,7 +31,6 @@ const RegisterPage = () => {
     }
 
     try {
-      // ✅ Step 1 — Check if phone number already exists
       const phoneExists = await checkIfPhoneExists(phone);
       if (phoneExists) {
         setError("This phone number is already registered. Please log in.");
@@ -40,23 +38,14 @@ const RegisterPage = () => {
         return;
       }
 
-      // ✅ Step 2 — Register and store in Firestore
-      console.log("📡 Attempting to register:", { email, password, username, phone, zkpPin });
       const user = await registerUser(email, password, username, phone, zkpPin);
-      console.log("✅ Registered user:", user.uid);
-
-      // ✅ Step 3 — Save UID in session for Picture Password setup
       sessionStorage.setItem("userId", user.uid);
 
       alert("🎉 Registered successfully!");
       navigate("/setup-picture-password");
     } catch (err) {
       console.error("❌ Registration error:", err);
-      const readableError =
-        err.message.includes("email-already-in-use")
-          ? "This email is already registered."
-          : "Registration failed. Please try again.";
-      setError(readableError);
+      setError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -64,7 +53,6 @@ const RegisterPage = () => {
 
   return (
     <div
-      className="page-container"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -121,7 +109,7 @@ const RegisterPage = () => {
           />
           <input
             type="tel"
-            placeholder="Phone Number (e.g., +919876543210)"
+            placeholder="Phone Number"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             style={inputStyle}
@@ -137,16 +125,7 @@ const RegisterPage = () => {
           />
 
           {error && (
-            <p
-              style={{
-                color: "tomato",
-                textAlign: "center",
-                marginTop: "10px",
-                fontWeight: "500",
-              }}
-            >
-              {error}
-            </p>
+            <p style={{ color: "tomato", textAlign: "center" }}>{error}</p>
           )}
 
           <button
@@ -162,20 +141,10 @@ const RegisterPage = () => {
           </button>
         </form>
 
-        <p
-          style={{
-            marginTop: "25px",
-            textAlign: "center",
-            color: "#666",
-          }}
-        >
+        <p style={{ textAlign: "center", marginTop: "20px" }}>
           Already have an account?{" "}
           <span
-            style={{
-              color: "#1e90ff",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
+            style={{ color: "#1e90ff", cursor: "pointer" }}
             onClick={() => navigate("/login")}
           >
             Log In
@@ -186,7 +155,7 @@ const RegisterPage = () => {
   );
 };
 
-// ✅ Reusable styles
+// ✅ Styles
 const inputStyle = {
   display: "block",
   width: "100%",
@@ -195,7 +164,6 @@ const inputStyle = {
   borderRadius: "8px",
   border: "1px solid #ccc",
   fontSize: "16px",
-  boxSizing: "border-box",
 };
 
 const buttonStyle = {
@@ -209,7 +177,6 @@ const buttonStyle = {
   width: "100%",
   marginTop: "10px",
   transition: "background 0.3s",
-  boxShadow: "0 4px 10px rgba(30,144,255,0.3)",
 };
 
 export default RegisterPage;

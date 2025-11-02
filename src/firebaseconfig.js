@@ -1,25 +1,21 @@
 // src/firebaseConfig.js
-// Firebase v9+ Modular SDK
-
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
 
-// Replace these values with your Firebase project config
+// ✅ Replace these values with your actual Firebase project credentials
 const firebaseConfig = {
-  apiKey: "AIzaSyAArPdKW7uuaO7wFtRocxB_mxG495OcXCg",
-  authDomain: "cyber-shield--ai.firebaseapp.com",
-  projectId: "cyber-shield--ai",
-  storageBucket: "cyber-shield--ai.firebasestorage.app",
-  messagingSenderId: "935467340315",
-  appId: "1:935467340315:web:7ac3e4cf3e168f7dc31ebe",
-  measurementId: "G-7QN8HF15QZ"
+  apiKey: "AIzaSyAxxxxxx", // 🔑 Your Firebase API key
+  authDomain: "walletapp-a97d5.firebaseapp.com",
+  projectId: "walletapp-a97d5",
+  storageBucket: "walletapp-a97d5.appspot.com",
+  messagingSenderId: "581230224931",
+  appId: "1:581230224931:web:abcd1234efgh5678",
 };
 
-
-// Initialize Firebase
+// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export Firestore and Auth
+// ✅ Export Firestore instance
 export const db = getFirestore(app);
-export const auth = getAuth(app);
+
+export default app;

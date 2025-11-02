@@ -1,23 +1,22 @@
 // src/components/pages/PicturePasswordVerify.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// Import from firebase.js (ensure .js extension for Vite/React strict imports)
 import { db } from "../../firebase.js";
 import { doc, getDoc } from "firebase/firestore";
 
+// ✅ Use same filenames as stored during registration
 const images = [
-  "/images/pic0.jpg",
   "/images/pic1.jpg",
   "/images/pic2.jpg",
   "/images/pic3.jpg",
   "/images/pic4.jpg",
   "/images/pic5.jpg",
+  "/images/pic6.jpg",
 ];
 
-// 🔗 Firestore path used in setup — must match exactly
-const getUserProfileDoc = (userId) => {
-  return doc(db, "artifacts", "walletapp-a97d5", "users", userId, "user_data", "profile");
-};
+// 🔗 Firestore document path
+const getUserProfileDoc = (userId) =>
+  doc(db, "artifacts", "walletapp-a97d5", "users", userId, "user_data", "profile");
 
 const PicturePasswordVerify = () => {
   const navigate = useNavigate();
@@ -29,7 +28,7 @@ const PicturePasswordVerify = () => {
 
   const userId = sessionStorage.getItem("userId");
 
-  // 🧠 Step 1: Fetch picture password from Firestore
+  // 🧠 Step 1: Fetch stored picture password
   useEffect(() => {
     const fetchData = async () => {
       if (!userId) {
@@ -43,7 +42,9 @@ const PicturePasswordVerify = () => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && docSnap.data().picturePassword) {
-          const savedSequence = docSnap.data().picturePassword;
+          const savedSequence = docSnap.data().picturePassword.map((img) =>
+            img.split("/").pop().trim()
+          ); // Normalize filenames only
           setCorrectSequence(savedSequence);
           setMessage(`Click ${savedSequence.length} images in your saved order.`);
         } else {
@@ -60,23 +61,23 @@ const PicturePasswordVerify = () => {
     fetchData();
   }, [userId]);
 
-  // 🎯 Step 2: Handle image click and verification
+  // 🎯 Step 2: Handle image click
   const handleImageClick = (img) => {
     if (!correctSequence.length || error) return;
 
-    const newSequence = [...selectedSequence, img];
+    const newSequence = [...selectedSequence, img.split("/").pop().trim()];
     setSelectedSequence(newSequence);
 
-    // Check each click as user proceeds
     const currentStep = newSequence.length - 1;
+
+    // ✅ Compare normalized values
     if (newSequence[currentStep] !== correctSequence[currentStep]) {
-      // Wrong image — reset and show error
       setError("❌ Incorrect sequence. Please try again.");
       setSelectedSequence([]);
       return;
     }
 
-    // If full sequence is correct
+    // ✅ If full sequence matches
     if (newSequence.length === correctSequence.length) {
       setMessage("✅ Picture Password Verified! Redirecting...");
       setError("");
@@ -86,7 +87,7 @@ const PicturePasswordVerify = () => {
     }
   };
 
-  // Reset selection manually
+  // 🔁 Reset manually
   const handleReset = () => {
     setSelectedSequence([]);
     setError("");
@@ -122,8 +123,8 @@ const PicturePasswordVerify = () => {
 
         <div style={gridStyle}>
           {images.map((img, index) => {
-            const isSelected = selectedSequence.includes(img);
-            const order = selectedSequence.indexOf(img) + 1;
+            const isSelected = selectedSequence.includes(img.split("/").pop());
+            const order = selectedSequence.indexOf(img.split("/").pop()) + 1;
 
             return (
               <div
@@ -137,7 +138,7 @@ const PicturePasswordVerify = () => {
                 }}
               >
                 <img
-                  src={`https://placehold.co/160x160/28a745/fff?text=Img+${index + 1}`}
+                  src={img}
                   alt={`pic-${index}`}
                   style={{
                     width: "160px",
@@ -147,20 +148,14 @@ const PicturePasswordVerify = () => {
                     transform: isSelected ? "scale(1.05)" : "scale(1)",
                   }}
                 />
-                {order > 0 && (
-                  <span style={orderBadgeStyle}>{order}</span>
-                )}
+                {order > 0 && <span style={orderBadgeStyle}>{order}</span>}
               </div>
             );
           })}
         </div>
 
-        {message && (
-          <p style={messageStyle}>{message}</p>
-        )}
-        {error && (
-          <p style={errorStyle}>{error}</p>
-        )}
+        {message && <p style={messageStyle}>{message}</p>}
+        {error && <p style={errorStyle}>{error}</p>}
 
         <button onClick={handleReset} style={resetButtonStyle}>
           Reset Selection
@@ -170,7 +165,7 @@ const PicturePasswordVerify = () => {
   );
 };
 
-// 🎨 STYLES
+// 🎨 Styles (same as before)
 const pageContainerStyle = {
   minHeight: "100vh",
   display: "flex",

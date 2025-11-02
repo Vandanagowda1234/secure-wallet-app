@@ -41,8 +41,13 @@ const BiometricPage = () => {
     }
   };
 
+  // ✅ Updated verification logic (only this part changed)
   const handleVerify = () => {
-    if (JSON.stringify(selectedImages) === JSON.stringify(savedPassword)) {
+    const normalize = (arr) => arr.map((img) => img.split("/").pop());
+    const selected = normalize(selectedImages);
+    const saved = normalize(savedPassword);
+
+    if (JSON.stringify(selected) === JSON.stringify(saved)) {
       alert("✅ Picture Password Verified!");
       navigate("/dashboard");
     } else {
@@ -53,61 +58,71 @@ const BiometricPage = () => {
 
   if (loading) {
     return (
-      <div className="text-center mt-12 text-gray-600 text-lg">
+      <div style={{ textAlign: "center", marginTop: "50px", color: "#555" }}>
         Loading images...
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center mt-10 font-[Poppins] w-full">
-      <h2 className="text-2xl font-bold mb-4 text-center">
+    <div
+      style={{
+        fontFamily: "Poppins, sans-serif",
+        textAlign: "center",
+        marginTop: "40px",
+        width: "100%",
+      }}
+    >
+      <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}>
         Step 3: Verify Picture Password 🔒
       </h2>
-      <p className="text-gray-600 mb-6 text-center">
+
+      <p style={{ color: "#555", marginBottom: "25px" }}>
         Select your 3 images in the same order as you did during registration.
       </p>
 
-      {/* ✅ 3x2 Grid Layout */}
-      <div className="grid grid-cols-3 gap-8 mb-8 w-[90%] max-w-3xl justify-items-center">
+      {/* ✅ Image Grid */}
+      <div className="image-grid">
         {allImages.map((img, index) => (
-          <div
+          <img
             key={index}
-            className={`border-4 rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 shadow-md ${
-              selectedImages.includes(img)
-                ? "border-green-500 scale-105"
-                : "border-gray-300"
+            src={img}
+            alt={`pic-${index}`}
+            className={`selectable-image ${
+              selectedImages.includes(img) ? "selected" : ""
             }`}
             onClick={() => handleSelect(img)}
-          >
-            <img
-              src={img}
-              alt={`pic-${index}`}
-              className="w-40 h-40 object-cover"
-              onError={(e) => {
-                e.target.src = `${window.location.origin}/images/fallback.jpg`;
-              }}
-            />
-          </div>
+            onError={(e) => {
+              e.target.src = `${window.location.origin}/images/fallback.jpg`;
+            }}
+          />
         ))}
       </div>
 
       <p
-        className={`text-center mb-4 font-medium ${
-          selectedImages.length < 3 ? "text-red-500" : "text-green-600"
-        }`}
+        style={{
+          marginTop: "20px",
+          color: selectedImages.length < 3 ? "red" : "green",
+          fontWeight: "500",
+        }}
       >
         Selected: {selectedImages.length} / 3 Minimum
       </p>
 
       <button
         onClick={handleVerify}
-        className={`${
-          selectedImages.length === 3
-            ? "bg-blue-600 hover:bg-blue-700"
-            : "bg-gray-400 cursor-not-allowed"
-        } text-white font-semibold py-2 px-8 rounded-lg shadow`}
         disabled={selectedImages.length < 3}
+        style={{
+          marginTop: "15px",
+          backgroundColor: selectedImages.length === 3 ? "#007bff" : "#ccc",
+          color: "white",
+          padding: "10px 25px",
+          borderRadius: "8px",
+          border: "none",
+          cursor: selectedImages.length === 3 ? "pointer" : "not-allowed",
+          fontWeight: "600",
+          transition: "0.3s",
+        }}
       >
         Verify Picture Password
       </button>
@@ -115,4 +130,4 @@ const BiometricPage = () => {
   );
 };
 
-export default BiometricPage;
+export default BiometricPage;  
