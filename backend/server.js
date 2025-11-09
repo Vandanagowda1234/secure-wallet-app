@@ -1,29 +1,10 @@
 // ✅ server.js
 import express from "express";
 import nodemailer from "nodemailer";
-import cors from "cors";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
 
 const app = express();
-
-// ✅ Strong, simplified CORS for both localhost & deployed frontend
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://secure-wallet-5bqhqgbod-vandanagowda86-4154s-projects.vercel.app",
-];
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
-
 app.use(express.json());
 
 // ✅ Firebase Config
@@ -35,23 +16,41 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// ✅ Gmail App Password Auth
+// ✅ Gmail Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "vandanagowda86@gmail.com",
-    pass: "fhbi akju pvgp fitk",
+    pass: "fhbi akju pvgp fitk", // Gmail App Password
   },
 });
 
+// ✅ CORS helper for Vercel serverless
+const setCors = (res) => {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173"); // local dev
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "https://secure-wallet-5bqhqgbod-vandanagowda86-4154s-projects.vercel.app"
+  ); // deployed frontend
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+};
+
 // ---------- SEND UNFREEZE EMAIL ----------
+app.options("/send-unfreeze-email", (req, res) => {
+  setCors(res);
+  res.status(200).end(); // Preflight
+});
+
 app.post("/send-unfreeze-email", async (req, res) => {
+  setCors(res);
   const { email, userId } = req.body;
   if (!email || !userId)
     return res.status(400).json({ success: false, error: "Missing email or userId" });
 
   try {
     const verifyLink = `https://secure-blockchain-transaction-mvnhphsx5.vercel.app/unfreeze/${userId}`;
+
     await transporter.sendMail({
       from: '"Secure Wallet App" <vandanagowda86@gmail.com>',
       to: email,
@@ -72,7 +71,13 @@ app.post("/send-unfreeze-email", async (req, res) => {
 });
 
 // ---------- UNFREEZE ACCOUNT ----------
+app.options("/unfreeze/:userId", (req, res) => {
+  setCors(res);
+  res.status(200).end(); // Preflight
+});
+
 app.get("/unfreeze/:userId", async (req, res) => {
+  setCors(res);
   const { userId } = req.params;
   try {
     const userRef = doc(db, "users", userId);
@@ -86,6 +91,7 @@ app.get("/unfreeze/:userId", async (req, res) => {
   }
 });
 
-// ✅ Start server locally
+// ✅ Start server locally (only for testing)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
