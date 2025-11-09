@@ -1,4 +1,4 @@
-// ✅ server.js
+// server.js
 import express from "express";
 import nodemailer from "nodemailer";
 import { initializeApp } from "firebase/app";
@@ -7,7 +7,7 @@ import { getFirestore, doc, updateDoc } from "firebase/firestore";
 const app = express();
 app.use(express.json());
 
-// ✅ Firebase Config
+// ---------- Firebase Config ----------
 const firebaseConfig = {
   apiKey: "AIzaSyAxxxxxx",
   authDomain: "walletapp-a97d5.firebaseapp.com",
@@ -16,7 +16,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// ✅ Gmail Transporter
+// ---------- Gmail Transporter ----------
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -25,25 +25,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ CORS helper for Vercel serverless
+// ---------- CORS helper ----------
 const setCors = (res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173"); // local dev
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "https://secure-wallet-5bqhqgbod-vandanagowda86-4154s-projects.vercel.app"
-  ); // deployed frontend
+  res.setHeader("Access-Control-Allow-Origin", "*"); // allow all origins (can restrict later)
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 };
 
-// ---------- SEND UNFREEZE EMAIL ----------
+// ---------- OPTIONS preflight ----------
 app.options("/send-unfreeze-email", (req, res) => {
   setCors(res);
-  res.status(200).end(); // Preflight
+  res.status(200).end();
 });
 
+app.options("/unfreeze/:userId", (req, res) => {
+  setCors(res);
+  res.status(200).end();
+});
+
+// ---------- POST send-unfreeze-email ----------
 app.post("/send-unfreeze-email", async (req, res) => {
   setCors(res);
+
   const { email, userId } = req.body;
   if (!email || !userId)
     return res.status(400).json({ success: false, error: "Missing email or userId" });
@@ -70,14 +73,10 @@ app.post("/send-unfreeze-email", async (req, res) => {
   }
 });
 
-// ---------- UNFREEZE ACCOUNT ----------
-app.options("/unfreeze/:userId", (req, res) => {
-  setCors(res);
-  res.status(200).end(); // Preflight
-});
-
+// ---------- GET unfreeze/:userId ----------
 app.get("/unfreeze/:userId", async (req, res) => {
   setCors(res);
+
   const { userId } = req.params;
   try {
     const userRef = doc(db, "users", userId);
@@ -91,7 +90,6 @@ app.get("/unfreeze/:userId", async (req, res) => {
   }
 });
 
-// ✅ Start server locally (only for testing)
+// ---------- Start server locally ----------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-
