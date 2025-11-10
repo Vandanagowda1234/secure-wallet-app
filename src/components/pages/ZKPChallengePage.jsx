@@ -84,12 +84,7 @@ export default function ZKPChallengePage() {
       const Q3 = P1 * P4;
       const Q4 = P3 - P1;
 
-      setCorrectAnswers([
-        Q1.toString(),
-        Q2.toString(),
-        Q3.toString(),
-        Q4.toString(),
-      ]);
+      setCorrectAnswers([Q1.toString(), Q2.toString(), Q3.toString(), Q4.toString()]);
       setMessage("Enter answers for the ZKP challenge below.");
     };
 
@@ -135,69 +130,33 @@ export default function ZKPChallengePage() {
       const batch = writeBatch(db);
       const accountsRef = collection(db, "accounts");
 
-      // ✅ Use user's wallet or fallback
-      let senderWallet = walletAddress || user?.walletAddress || null;
-      if (!senderWallet) {
-        senderWallet = "0x12345"; // fallback wallet
-        console.warn("⚠️ Using fallback wallet 0x12345");
-      }
+      let senderWallet = walletAddress || user?.walletAddress || "0x12345";
 
-      // 🔍 Check if sender exists, else create
-      let senderSnap = await getDocs(
-        query(accountsRef, where("address", "==", senderWallet))
-      );
+      let senderSnap = await getDocs(query(accountsRef, where("address", "==", senderWallet)));
       if (senderSnap.empty) {
-        console.warn("⚠️ Sender wallet not found — creating new account");
-        await addDoc(accountsRef, {
-          address: senderWallet,
-          balance: 5000, // default starting balance
-        });
-        senderSnap = await getDocs(
-          query(accountsRef, where("address", "==", senderWallet))
-        );
+        await addDoc(accountsRef, { address: senderWallet, balance: 5000 });
+        senderSnap = await getDocs(query(accountsRef, where("address", "==", senderWallet)));
       }
 
-      // 🔍 Check if recipient exists, else create
-      let recipientSnap = await getDocs(
-        query(accountsRef, where("address", "==", recipient))
-      );
+      let recipientSnap = await getDocs(query(accountsRef, where("address", "==", recipient)));
       if (recipientSnap.empty) {
-        console.warn("⚠️ Recipient wallet not found — creating new account");
         await addDoc(accountsRef, { address: recipient, balance: 0 });
-        recipientSnap = await getDocs(
-          query(accountsRef, where("address", "==", recipient))
-        );
+        recipientSnap = await getDocs(query(accountsRef, where("address", "==", recipient)));
       }
 
-      // ✅ Fetch balances safely
       const senderDoc = senderSnap.docs[0];
       const recipientDoc = recipientSnap.docs[0];
       const senderBal = parseFloat(senderDoc.data().balance || 0);
       const recipientBal = parseFloat(recipientDoc.data().balance || 0);
       const transferAmount = parseFloat(amount || 0);
 
-      if (isNaN(senderBal) || isNaN(recipientBal) || isNaN(transferAmount)) {
-        throw new Error("Invalid number format in transaction fields.");
-      }
+      if (senderBal < transferAmount) throw new Error("Insufficient funds in sender account.");
 
-      if (senderBal < transferAmount)
-        throw new Error("Insufficient funds in sender account.");
-
-      // ✅ Safe arithmetic
-      batch.update(senderDoc.ref, {
-        balance: (senderBal - transferAmount).toFixed(2),
-      });
-      batch.update(recipientDoc.ref, {
-        balance: (recipientBal + transferAmount).toFixed(2),
-      });
-
+      batch.update(senderDoc.ref, { balance: (senderBal - transferAmount).toFixed(2) });
+      batch.update(recipientDoc.ref, { balance: (recipientBal + transferAmount).toFixed(2) });
       await batch.commit();
 
-      // ✅ Update user record + transaction history
-      await updateDoc(doc(db, "users", userId), {
-        lastTransaction: new Date().toISOString(),
-      });
-
+      await updateDoc(doc(db, "users", userId), { lastTransaction: new Date().toISOString() });
       await addDoc(collection(db, "users", userId, "transactions"), {
         sender: senderWallet,
         recipient,
@@ -291,10 +250,51 @@ export default function ZKPChallengePage() {
       )}
 
       {isAccountFrozen && (
-        <p style={{ color: "red", marginTop: "20px" }}>
-          🔒 Account frozen due to incorrect ZKP attempt. Contact admin to
-          unfreeze.
-        </p>
+        <>
+          <p style={{ color: "red", marginTop: "20px" }}>
+            🔒 Account frozen due to incorrect ZKP attempt.
+          </p>
+
+          {/* ---------- UNFREEZE BUTTON ---------- */}
+          {user?.email && (
+            <div style={{ marginTop: "20px" }}>
+              <button
+                style={{
+                  padding: "10px 20px",
+                  background: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+                onClick={async () => {
+                  try {
+                    const res = await fetch("http://localhost:5000/send-unfreeze-email", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        email: user.email, // ✅ Registered email
+                        userId: userId,    // ✅ Backend generates OTP
+                      }),
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                      alert("✅ Unfreeze email sent to your registered email!");
+                    } else {
+                      alert("❌ Failed to send email: " + data.error);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert("❌ Error sending unfreeze email.");
+                  }
+                }}
+              >
+                Send Unfreeze Email
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
