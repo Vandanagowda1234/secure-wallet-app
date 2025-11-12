@@ -14,7 +14,7 @@ import {
 
 // ✅ Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAxxxxxx", // replace with your real API key
+  apiKey: "AIzaSyAxxxxxx",
   authDomain: "walletapp-a97d5.firebaseapp.com",
   projectId: "walletapp-a97d5",
   storageBucket: "walletapp-a97d5.appspot.com",

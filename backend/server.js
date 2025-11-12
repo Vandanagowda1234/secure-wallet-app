@@ -52,7 +52,7 @@ app.post("/send-unfreeze-email", async (req, res) => {
     return res.status(400).json({ success: false, error: "Missing email or userId" });
 
   try {
-    const verifyLink = `https://secure-blockchain-transaction-mvnhphsx5.vercel.app/unfreeze/${userId}`;
+    const unfreezeLink = `https://secure-wallet.vercel.app/unfreeze-success?address=${userAddress}`;
 
     await transporter.sendMail({
       from: '"Secure Wallet App" <vandanagowda86@gmail.com>',
@@ -82,7 +82,7 @@ app.get("/unfreeze/:userId", async (req, res) => {
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, { isFrozen: false });
 
-    const redirectUrl = `https://secure-wallet-5bqhqgbod-vandanagowda86-4154s-projects.vercel.app/unfreeze-success`;
+    const redirectUrl = `https://secure-wallet-5bqhqgbod-vandanagowda86-4154s-projects.vercel.app/dashboard`;
     res.redirect(redirectUrl);
   } catch (err) {
     console.error("Error unfreezing user:", err);

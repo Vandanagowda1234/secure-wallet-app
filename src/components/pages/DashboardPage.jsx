@@ -36,20 +36,28 @@ const DashboardPage = () => {
 
   // ✅ Load account, balance, and history on mount and whenever a transaction occurs
   useEffect(() => {
-    const loadData = async () => {
-      const storedAccounts = JSON.parse(localStorage.getItem("accounts")) || ganacheAccounts;
-      const connectedAccount = storedAccounts.find(acc => acc.address === account) || storedAccounts[1];
+  const loadData = async () => {
+    const storedAccounts = JSON.parse(localStorage.getItem("accounts")) || ganacheAccounts;
 
-      setAccount(connectedAccount.address);
-      setBalance(parseFloat(connectedAccount.balance));
+    // 👇 NEW CODE: load active account saved from unfreeze link
+    const savedAccount = localStorage.getItem("activeAccount");
 
-      const txHistory = JSON.parse(localStorage.getItem("txHistory")) || [];
-      setHistory(txHistory);
+    const connectedAccount =
+      storedAccounts.find(acc => acc.address === savedAccount) ||
+      storedAccounts.find(acc => acc.address === account) ||
+      storedAccounts[1];
 
-      setAvailableAccounts(storedAccounts);
-    };
-    loadData();
-  }, [account]); // will reload balances and history after account updates
+    setAccount(connectedAccount.address);
+    setBalance(parseFloat(connectedAccount.balance));
+
+    const txHistory = JSON.parse(localStorage.getItem("txHistory")) || [];
+    setHistory(txHistory);
+
+    setAvailableAccounts(storedAccounts);
+  };
+
+  loadData();
+}, [account]);
 
   // ✅ Handle send button (redirect to ZKP challenge)
   const handleSend = async () => {

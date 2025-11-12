@@ -1,34 +1,32 @@
-// ✅ src/components/pages/UnfreezeSuccessPage.jsx
-import { useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function UnfreezeSuccessPage() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigate("/zkp-challenge");
-    }, 3000); // ⏳ Redirect after 3 seconds
-
-    return () => clearTimeout(timer);
-  }, [navigate]);
+  const handleStartChallenge = () => {
+    // 👇 go to the main ZKP Challenge page (not the form)
+    navigate("/zkp-challenge");
+  };
 
   return (
-    <div
-      style={{
-        textAlign: "center",
-        marginTop: "100px",
-        padding: "40px",
-        background: "#f8f9fa",
-        borderRadius: "12px",
-        maxWidth: "500px",
-        margin: "auto",
-        boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
-      }}
-    >
-      <h2 style={{ color: "#28a745" }}>✅ Account Unfrozen!</h2>
-      <p>Your account has been successfully verified.</p>
-      <p>Redirecting you to the ZKP Challenge page...</p>
+    <div style={{ textAlign: "center", marginTop: "100px" }}>
+      <h2>✅ Account Unfrozen Successfully!</h2>
+      <p>You can now proceed with your Zero Knowledge Challenge 🔐</p>
+      <button
+        onClick={handleStartChallenge}
+        style={{
+          marginTop: "20px",
+          padding: "10px 20px",
+          backgroundColor: "#007bff",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        Start ZKP Challenge
+      </button>
     </div>
   );
 }
